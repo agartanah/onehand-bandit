@@ -1,20 +1,32 @@
 <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>SLOTS</title>
+
+        <link rel="stylesheet" href="styles/slots.css">
+    </head>
     <body>
         <div class="content">
             <div class="slots">
                 <div class="slot">
-                    
+                    <img src="assets/img/seven.png" alt="slot">
                 </div>
                 <div class="slot">
-                    
+                    <img src="assets/img/seven.png" alt="slot">
                 </div>
                 <div class="slot">
-                    
+                    <img src="assets/img/seven.png" alt="slot">
                 </div>
             </div>
-            <button class="button-spin">
-        
+            <button id="button-spin" class="button-spin" onclick="console.log('INLINE CLICK')">
+                SPIN
             </button>
+            <input id="bet" type="number" value="100"/>
+            <div>
+                <p>SCORE</p>
+                <p id="score">10 000</p>
+            </div>
         </div>
+        <script src="script.js"></script>
     </body>
 </html>
