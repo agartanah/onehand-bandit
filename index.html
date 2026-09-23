@@ -8,7 +8,47 @@
     </head>
     <body>
         <div class="content">
-            <div class="slot-machine">
+            <div class="game-layout">
+                <aside class="payout-panel" aria-label="Payouts">
+                    <h1>PAYTABLE</h1>
+                    <p class="payout-subtitle">MATCH 3</p>
+                    <div class="payout-list">
+                        <div class="payout-row">
+                            <div class="payout-symbols">
+                                <img src="assets/img/seven.png" alt="Seven">
+                                <img src="assets/img/seven.png" alt="Seven">
+                                <img src="assets/img/seven.png" alt="Seven">
+                            </div>
+                            <strong>21x</strong>
+                        </div>
+                        <div class="payout-row">
+                            <div class="payout-symbols">
+                                <img src="assets/img/cherry.png" alt="Cherry">
+                                <img src="assets/img/cherry.png" alt="Cherry">
+                                <img src="assets/img/cherry.png" alt="Cherry">
+                            </div>
+                            <strong>7x</strong>
+                        </div>
+                        <div class="payout-row">
+                            <div class="payout-symbols">
+                                <img src="assets/img/lemon.png" alt="Lemon">
+                                <img src="assets/img/lemon.png" alt="Lemon">
+                                <img src="assets/img/lemon.png" alt="Lemon">
+                            </div>
+                            <strong>3x</strong>
+                        </div>
+                        <div class="payout-row">
+                            <div class="payout-symbols">
+                                <img src="assets/img/bar.png" alt="Bar">
+                                <img src="assets/img/bar.png" alt="Bar">
+                                <img src="assets/img/bar.png" alt="Bar">
+                            </div>
+                            <strong>2x</strong>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="slot-machine">
                 <p id="state-text" class="state-text">LET'S PLAY!</p>
                 <div class="slots">
                     <div class="slot">
@@ -36,6 +76,7 @@
                         <label id="score">10 000</p>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
         <script src="script.js"></script>
