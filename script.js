@@ -42,7 +42,10 @@ function spinSlot(slot) {
 
 buttonSpin.addEventListener("click", async () => {
   try {
-    if (Number(bet.value) > Number(score.textContent)) {
+    if (
+      Number(bet.value) > Number(score.textContent) ||
+      Number(bet.value) <= 0
+    ) {
       return;
     }
 
