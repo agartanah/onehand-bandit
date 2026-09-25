@@ -1,6 +1,7 @@
 const stateText = document.getElementById("state-text");
 const buttonSpin = document.getElementById("button-spin");
 const slots = document.querySelectorAll(".slot img");
+const lockButtons = document.querySelectorAll(".slot-lock-button");
 const score = document.getElementById("score");
 const bet = document.getElementById("bet");
 
@@ -23,14 +24,66 @@ let backStarted = false;
 
 const slotImages = ["seven", "cherry", "lemon", "bar"];
 
-let balance = Number(localStorage.getItem("balance"));
+let balance = 0;
+let serverBalance = 0;
+let currentSlots = Array(slots.length).fill("seven");
+const lockedSlots = Array(slots.length).fill(null);
+let isSpinning = false;
+let hasSpun = false;
+let lockRequestInProgress = false;
+let canLock = true;
+let userLoaded = false;
 
-if (localStorage.getItem("balance") === null) {
-  balance = 10000;
-  localStorage.setItem("balance", balance);
+function updateLockButtons() {
+  const lockedCount = lockedSlots.filter(
+    (slotName) => slotName !== null,
+  ).length;
+
+  lockButtons.forEach((button) => {
+    const slotIndex = Number(button.dataset.slotIndex);
+    const isLocked = lockedSlots[slotIndex] !== null;
+
+    button.classList.toggle("is-locked", isLocked);
+    button.setAttribute("aria-pressed", String(isLocked));
+    button.disabled =
+      !hasSpun ||
+      !canLock ||
+      isSpinning ||
+      lockRequestInProgress ||
+      (!isLocked && lockedCount >= 2);
+  });
 }
 
-score.textContent = balance;
+function clearLockedSlots() {
+  lockedSlots.fill(null);
+  updateLockButtons();
+}
+
+async function saveLockedSlots() {
+  const lockedIndexes = lockedSlots.reduce((indexes, slotName, index) => {
+    if (slotName !== null) {
+      indexes.push(index);
+    }
+
+    return indexes;
+  }, []);
+
+  const response = await fetch("lock.php", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      locked: lockedIndexes,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ошибка: ${response.status}`);
+  }
+}
 
 function spinSlot(slot) {
   return setInterval(() => {
@@ -40,17 +93,50 @@ function spinSlot(slot) {
   }, 100);
 }
 
+async function loadUser() {
+  const responseUser = await fetch("user.php", {
+    method: "GET",
+    credentials: "same-origin",
+  });
+
+  if (!responseUser.ok) {
+    throw new Error(`HTTP ошибка: ${responseUser.status}`);
+  }
+
+  const user = await responseUser.json();
+  serverBalance = Number(user.balance);
+  balance = serverBalance;
+  canLock = user.canLock !== false;
+  userLoaded = true;
+  score.textContent = balance.toFixed(2);
+}
+
+buttonSpin.disabled = true;
+updateLockButtons();
+
+loadUser()
+  .then(() => {
+    buttonSpin.disabled = false;
+  })
+  .catch((error) => {
+    console.error("Не удалось загрузить пользователя:", error);
+    stateText.textContent = "CONNECTION ERROR";
+  });
+
 buttonSpin.addEventListener("click", async () => {
+  const betValue = Number(bet.value);
+  let animations = [];
+  let betCharged = false;
+
+  if (!Number.isFinite(betValue) || betValue <= 0 || betValue > balance) {
+    return;
+  }
+
+  buttonSpin.disabled = true;
+  isSpinning = true;
+  updateLockButtons();
+
   try {
-    if (
-      Number(bet.value) > Number(score.textContent) ||
-      Number(bet.value) <= 0
-    ) {
-      return;
-    }
-
-    buttonSpin.disabled = true;
-
     if (!backStarted) {
       backAudio.currentTime = 0;
       await backAudio.play();
@@ -60,46 +146,41 @@ buttonSpin.addEventListener("click", async () => {
     handSound.currentTime = 0;
     await handSound.play();
 
-    const animations = [];
-
-    for (const slot of slots) {
-      animations.push(spinSlot(slot));
-    }
-
+    animations = Array.from(slots, (slot, index) =>
+      lockedSlots[index] === null ? spinSlot(slot) : null,
+    ).filter((animation) => animation !== null);
     stateText.textContent = "TRY YOUR LUCK!";
 
     spinSound.currentTime = 0;
     spinSound.play();
 
+    balance -= betValue;
+    score.textContent = balance.toFixed(2);
+    betCharged = true;
+
     const responsePromise = fetch("spin.php", {
       method: "POST",
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        bet: Number(bet.value),
-        size: 3,
+        bet: betValue,
+        size: slots.length,
       }),
     });
 
-    balance -= Number(bet.value);
-    score.textContent = balance;
-
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    spinSound.pause();
-    spinSound.currentTime = 0;
-
-    const response = await responsePromise;
+    const [response] = await Promise.all([
+      responsePromise,
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
 
     if (!response.ok) {
-      console.error("HTTP ошибка:", response.status);
-      return;
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ошибка: ${response.status}`);
     }
 
     const data = await response.json();
-
-    console.debug("Ответ сервера:", data);
 
     for (const animation of animations) {
       clearInterval(animation);
@@ -107,27 +188,85 @@ buttonSpin.addEventListener("click", async () => {
 
     for (let indexSlot = 0; indexSlot < slots.length; indexSlot++) {
       slots[indexSlot].src = `assets/img/${data.slots[indexSlot]}.png`;
+      currentSlots[indexSlot] = data.slots[indexSlot];
     }
 
-    balance += Number(data.win);
+    hasSpun = true;
+    canLock = data.canLock === true;
 
-    score.textContent = balance;
+    serverBalance = Number(data.balance);
+    balance = serverBalance;
+    score.textContent = balance.toFixed(2);
+    clearLockedSlots();
 
     if (Number(data.win) === 0) {
       soundLose.currentTime = 0;
       await soundLose.play();
-
       stateText.textContent = "YOU LOSE!!!";
     } else {
       soundWin.currentTime = 0;
       await soundWin.play();
-
       stateText.textContent = "YOU WIN!!!";
     }
   } catch (error) {
     console.error("Ошибка:", error);
+    stateText.textContent = "SPIN FAILED";
+
+    if (betCharged) {
+      try {
+        await loadUser();
+      } catch (loadError) {
+        console.error("Не удалось синхронизировать баланс:", loadError);
+      }
+    }
   } finally {
-    localStorage.setItem("balance", balance);
+    for (const animation of animations) {
+      clearInterval(animation);
+    }
+
+    spinSound.pause();
+    spinSound.currentTime = 0;
+    isSpinning = false;
+    updateLockButtons();
     buttonSpin.disabled = false;
   }
+});
+
+lockButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (isSpinning) {
+      return;
+    }
+
+    const slotIndex = Number(button.dataset.slotIndex);
+    const previousLockedSlots = lockedSlots.slice();
+
+    if (lockedSlots[slotIndex] === null) {
+      const lockedCount = lockedSlots.filter(
+        (slotName) => slotName !== null,
+      ).length;
+
+      if (lockedCount >= 2) {
+        return;
+      }
+
+      lockedSlots[slotIndex] = currentSlots[slotIndex];
+    } else {
+      lockedSlots[slotIndex] = null;
+    }
+
+    lockRequestInProgress = true;
+    updateLockButtons();
+
+    try {
+      await saveLockedSlots();
+    } catch (error) {
+      lockedSlots.splice(0, lockedSlots.length, ...previousLockedSlots);
+      stateText.textContent = "LOCK FAILED";
+      console.error("Не удалось сохранить блокировку:", error);
+    } finally {
+      lockRequestInProgress = false;
+      updateLockButtons();
+    }
+  });
 });
