@@ -61,19 +61,24 @@
                         <img src="assets/img/seven.png" alt="slot">
                     </div>
                 </div>
+                <div class="slot-controls" aria-label="Lock slots">
+                    <button class="slot-lock-button" type="button" data-slot-index="0" aria-label="Lock first slot" aria-pressed="false">1</button>
+                    <button class="slot-lock-button" type="button" data-slot-index="1" aria-label="Lock second slot" aria-pressed="false">2</button>
+                    <button class="slot-lock-button" type="button" data-slot-index="2" aria-label="Lock third slot" aria-pressed="false">3</button>
+                </div>
                 <div class="body-slots">
                     <div class="bet-spin-container">
                         <div class="bet-container">
                             <label>BET</label>
                             <input id="bet" class="bet" type="number" value="100"/>
                         </div>
-                        <button id="button-spin" class="button-spin" onclick="console.log('INLINE CLICK')">
+                        <button id="button-spin" class="button-spin">
                             SPIN
                         </button>
                     </div>
                     <div class="score-container">
                         <label>SCORE</label>
-                        <label id="score">10 000</p>
+                        <label id="score"></p>
                     </div>
                 </div>
             </div>
