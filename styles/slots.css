@@ -100,6 +100,7 @@ body {
 }
 
 .slot-machine {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -132,7 +133,38 @@ body {
 .slot img {
     height: 52px;
     width: 52px;
-    /* object-fit: contain; */
+}
+
+.slot-controls {
+    position: absolute;
+    top: 245px;
+    left: 111px;
+    display: flex;
+    gap: 51px;
+}
+
+.slot-lock-button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 3px solid #24120d;
+    border-radius: 50%;
+    background-color: #fff8dc;
+    color: #8b0000;
+    font-family: "Bungee", sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.slot-lock-button.is-locked {
+    background-color: crimson;
+    color: #fff8dc;
+    box-shadow: 0 0 0 4px #fff8dc;
+}
+
+.slot-lock-button:disabled {
+    cursor: default;
+    opacity: 0.45;
 }
 
 .body-slots {
