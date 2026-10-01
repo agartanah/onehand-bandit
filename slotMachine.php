@@ -91,18 +91,17 @@ class SlotMachine
         $lockedNames = array_values(
             array_filter($lockedSlots, fn($slotName) => $slotName !== null)
         );
-        $winningSlot = $this->generateRandomSlot();
 
         if ($lockedNames !== []) {
-            $winningSlot = $this->findSlot($lockedNames[0]);
-
             foreach ($lockedNames as $lockedName) {
-                if ($lockedName !== $winningSlot->name) {
-                    throw new InvalidArgumentException(
-                        "Locked slots must have the same symbol on a guaranteed spin"
-                    );
+                if ($lockedName !== $lockedNames[0]) {
+                    return $this->generateWinning($size, $bet, $lockedSlots);
                 }
             }
+
+            $winningSlot = $this->findSlot($lockedNames[0]);
+        } else {
+            $winningSlot = $this->generateRandomSlot();
         }
 
         for ($cellIndex = 0; $cellIndex < $size; $cellIndex++) {
